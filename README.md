@@ -1,7 +1,7 @@
 # claude-portrait
 
 [![tests](https://github.com/IvanStrazov/claude-portrait/actions/workflows/test.yml/badge.svg)](https://github.com/IvanStrazov/claude-portrait/actions/workflows/test.yml)
-[![version](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-0.2.0-blue)](CHANGELOG.md)
 [![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 ![dependencies: none](https://img.shields.io/badge/dependencies-none-brightgreen)
 ![python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
@@ -12,7 +12,7 @@
 - **Incremental.** Each update reads only sessions newer than the last saved portrait, then merges them in. Facts are added, updated or dropped.
 - **Sensitive topics are opt-in.** On first use you choose: `include`, `separate` (kept in `private.md`, shown only when you ask) or `exclude`.
 - **Extra sources only with consent.** Disk folders, GitHub and the like are used only after you approve them. You can revoke them at any time.
-- **Local only.** Plain Markdown in `~/.claude/portrait/`. No hooks, no network, no database, one stdlib Python file.
+- **Local only.** Plain Markdown in `~/.claude/portrait/`. No hooks of its own, no network, no database, one stdlib Python file.
 
 ## Install
 
@@ -42,6 +42,24 @@ Limits can be changed with `PORTRAIT_MAX_LINES`, `PORTRAIT_PRIVATE_MAX_LINES`, `
   config.json    sensitive policy, approved extra sources, last update time
 ```
 
+## Works with claude-journal (optional)
+
+If [claude-journal](https://github.com/IvanStrazov/claude-journal) is installed, the first `/portrait` run offers to link them. They share `~/.claude/ecosystem.json`, and nothing changes until you agree:
+- the portrait also reads journal indexes;
+- the journal adds a short portrait digest at session start and keeps *Projects* and *Communication & preferences* up to date at wrap-up.
+
+Digest sizes, with costs measured from your own sessions by `portrait.py digest-cost` (example output):
+
+```
+requests per session: 96 (measured over your last 24 sessions)
+preset   sections                                             lines tokens per session
+off      -                                                        0      0           0
+short    Communication & preferences                              4     79         849
+medium * Communication & preferences, Who                         7    126        1353
+long     Communication & preferences, Who, Work style with AI     9    168        1805
+```
+"per session" = written to the prompt cache once (×1.25), then read on every later request (×0.1), in input-token equivalents.
+
 ## Commands (used by the skill)
 
 ```
@@ -49,8 +67,10 @@ portrait.py status
 portrait.py config --sensitive include|separate|exclude
 portrait.py config --add-source github | --remove-source github | --sources-asked | --reset
 portrait.py collect [--all] [--max-chars N]
-portrait.py show [--private]
-portrait.py save [--private] < portrait.md
+portrait.py show [--private] [--section NAME]
+portrait.py save [--private] [--section NAME] < portrait.md
+portrait.py link on [--digest off|short|medium|long] | link off
+portrait.py digest-cost
 ```
 
 ## Privacy

@@ -10,7 +10,7 @@ All reads and writes go through one script: `P` = `python3 "<plugin root>/script
 Files live in `~/.claude/portrait/` (local only, never published): `portrait.md` (≤ 80 lines), `private.md` (≤ 40 lines, sensitive topics, only with policy `separate`), `config.json`.
 
 ## 1. Status and first-run setup
-Run `P status`. If either line says NOT SET / NO, ask the user first (one AskUserQuestion with both questions), then save the answers:
+Run `P status`. If any line says NOT SET / NO / NOT DECIDED, ask the user first (one AskUserQuestion covering all of them), then save the answers:
 
 - **Sensitive topics** (health, mental state, substances, sex life, religion, politics, finances, legal trouble):
   `include` — part of the portrait; `separate` — kept in `private.md`, shown only on request; `exclude` — never written.
@@ -18,7 +18,11 @@ Run `P status`. If either line says NOT SET / NO, ask the user first (one AskUse
 - **Extra sources** beyond transcripts, memory and journal (e.g. project folders on disk, Documents/installed apps, GitHub profile via `gh`, anything the user names). Default is none.
   → `P config --add-source "<name>"` for each approved one, or `P config --sources-asked` if none.
 
-The user can change either at any time ("include health", "add GitHub", "forget the disk"): run the matching `config` command, and on removal also drop facts that came only from that source or topic.
+- **Link with claude-journal** (shown only when it is installed): the portrait then also reads journal indexes; the journal shows a short digest of the portrait at session start and, at wrap-up, updates only "Projects" and "Communication & preferences" from that session. Never sensitive topics.
+  Before asking, run `P digest-cost` and offer its presets as the options, each with its measured "per session" cost (off / short / medium = default / long). Say these are estimates in input-token equivalents with prompt caching.
+  → `P link on --digest <preset>` or `P link off`
+
+The user can change any of these at any time ("include health", "add GitHub", "forget the disk"): run the matching `config` command, and on removal also drop facts that came only from that source or topic.
 
 ## 2. Collect
 `P collect` prints only what is new since the last update: the user's own messages per session (newest first, truncated), new memory files, journal indexes. Use `--all` only for a full rebuild or when there is no portrait yet. If blocks were dropped by the budget, rerun with a larger `--max-chars` only if the user agrees.
@@ -39,6 +43,7 @@ P save <<'EOF'
 EOF
 ```
 Same for `P save --private` with sensitive facts, if any.
+Keep the section names exactly as above: linked plugins find sections by name. To change one section only: `P show --section <name>` / `P save --section <name>` (≤ 20 lines; this does not count as a full update).
 
 Rules:
 - Facts the user stated or clearly did, not guesses. Mark inferences with "(likely)". Put contradictions and gaps in "Unknown / to confirm".

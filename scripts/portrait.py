@@ -10,13 +10,15 @@ Commands:
   status                              config, last update, how many sessions are new
   config [--sensitive P] [--add-source S] [--remove-source S] [--reset]
   collect [--all] [--max-chars N]     new material since the last update -> stdout
-  show [--private]                    print the portrait (or the private part)
-  save [--private]                    stdin -> portrait.md (or private.md); marks the update
+  show [--private] [--section S]      print the portrait (or the private part, or one section)
+  save [--private] [--section S]      stdin -> portrait.md (or private.md, or one section)
+  link on|off [--digest PRESET]       link with claude-journal via ~/.claude/ecosystem.json
+  digest-cost                         token cost of each digest size (off/short/medium/long), with caching
   where                               print the portrait dir
 
 Sources read by `collect`: the user's own messages from Claude Code transcripts
 (~/.claude/projects/*/*.jsonl), Claude Code memory files (memory/*.md), and
-claude-journal indexes (~/journal and <project>/.journal) when present.
+claude-journal indexes (~/journal and <project>/.journal) when linked.
 Nothing else is read by the script; extra sources are listed in config and
 gathered by Claude only after the user approved them.
 
@@ -49,6 +51,26 @@ POLICIES = ("include", "separate", "exclude")
 CLAUDE_DIR = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude").expanduser()
 PORTRAIT_DIR = Path(os.environ.get("PORTRAIT_DIR") or CLAUDE_DIR / "portrait").expanduser()
 JOURNAL_DIR = Path(os.environ.get("JOURNAL_GLOBAL_DIR") or Path.home() / "journal").expanduser()
+
+SECTION_MAX = _int_env("PORTRAIT_SECTION_MAX_LINES", 20)
+SCRIPT = Path(__file__).resolve()
+
+# ---------- ecosystem: links with sibling plugins (shared file, same schema in each plugin) ----------
+ECO_FILE = Path(os.environ.get("CLAUDE_ECOSYSTEM_FILE") or CLAUDE_DIR / "ecosystem.json").expanduser()
+SELF, PEER = "claude-portrait", "claude-journal"
+LINK = "+".join(sorted((SELF, PEER)))
+DIGEST_PRESETS = {  # what the linked journal shows at session start
+    "off": ([], 0),
+    "short": (["Communication & preferences"], 8),
+    "medium": (["Communication & preferences", "Who"], 15),
+    "long": (["Communication & preferences", "Who", "Work style with AI"], 25),
+}
+DEFAULT_DIGEST = "medium"
+LINK_DEFAULTS = {"auto_sections": ["Projects", "Communication & preferences"],
+                 "digest_sections": DIGEST_PRESETS[DEFAULT_DIGEST][0],
+                 "digest_lines": DIGEST_PRESETS[DEFAULT_DIGEST][1]}
+# Prompt caching: the digest is written to cache once (x1.25), then read on every later request (x0.1).
+CACHE_WRITE, CACHE_READ = 1.25, 0.1
 
 for _s in (sys.stdin, sys.stdout, sys.stderr):
     try:
@@ -103,6 +125,85 @@ def atomic_write(path: Path, text: str):
 
 def save_cfg(c):
     atomic_write(cfg_path(), json.dumps(c, ensure_ascii=False, indent=2) + "\n")
+
+
+def eco_load():
+    try:
+        e = json.loads(ECO_FILE.read_text(encoding="utf-8"))
+        if not isinstance(e, dict):
+            e = {}
+    except (OSError, ValueError):
+        e = {}
+    e.setdefault("version", 1)
+    e.setdefault("plugins", {})
+    e.setdefault("links", {})
+    return e
+
+
+def eco_register():
+    """Record where this plugin's script and data are, so sibling plugins can find them."""
+    e = eco_load()
+    me = {"cmd": f'"{sys.executable}" "{SCRIPT}"', "portrait_file": str(PORTRAIT_DIR / "portrait.md")}
+    if e["plugins"].get(SELF) != me:
+        e["plugins"][SELF] = me
+        try:
+            atomic_write(ECO_FILE, json.dumps(e, ensure_ascii=False, indent=2) + "\n")
+        except OSError:
+            pass
+    return e
+
+
+def peer_installed(e):
+    return PEER in e["plugins"] or (CLAUDE_DIR / "plugins" / "cache" / PEER).is_dir()
+
+
+def link_enabled(e):
+    return bool((e["links"].get(LINK) or {}).get("enabled"))
+
+
+# ---------- portrait sections ----------
+
+def split_sections(text):
+    """[(heading or None, lines)] where heading is the '## ' line."""
+    out, cur = [], (None, [])
+    for line in text.splitlines():
+        if line.startswith("## "):
+            out.append(cur)
+            cur = (line, [])
+        else:
+            cur[1].append(line)
+    out.append(cur)
+    return out
+
+
+def _match(heading, name):
+    return heading is not None and heading[3:].strip().lower().startswith(name.strip().lower())
+
+
+def get_section(text, name):
+    for h, lines in split_sections(text):
+        if _match(h, name):
+            return "\n".join([h] + lines).strip()
+    return None
+
+
+def put_section(text, name, body):
+    body = body.strip()
+    if not body.startswith("## "):
+        body = f"## {name}\n{body}"
+    parts, done = [], False
+    for h, lines in split_sections(text):
+        if _match(h, name) and not done:
+            parts.append(body)
+            done = True
+        elif h is None:
+            if "\n".join(lines).strip():
+                parts.append("\n".join(lines).strip())
+        else:
+            parts.append("\n".join([h] + lines).strip())
+    if not done:
+        parts.append(body)
+    return "\n\n".join(parts) + "\n"
 
 
 # ---------- sources ----------
@@ -203,6 +304,13 @@ def cmd_status(_):
     print(f"portrait: {lines} lines" if lines else "portrait: none yet")
     print(f"last update: {c['last_update'] or 'never'}")
     print(f"sessions with new activity: {len(new)}")
+    e = eco_register()
+    if peer_installed(e):
+        link = e["links"].get(LINK)
+        if link is None:
+            print(f"link with {PEER}: NOT DECIDED - offer it (`link on` / `link off`)")
+        else:
+            print(f"link with {PEER}: {'on' if link.get('enabled') else 'off'}")
 
 
 def cmd_config(a):
@@ -244,7 +352,7 @@ def cmd_collect(a):
     if c["sensitive"]:
         head.append(f"# sensitive policy: {c['sensitive']}")
 
-    for f in journal_indexes(cwds):
+    for f in (journal_indexes(cwds) if link_enabled(eco_register()) else []):
         txt = f.read_text(encoding="utf-8", errors="replace").strip()
         if txt:
             parts.append(f"## journal index: {f.parent}\n{txt[-3000:]}")
@@ -281,10 +389,109 @@ def cmd_collect(a):
 
 def cmd_show(a):
     f = PORTRAIT_DIR / ("private.md" if a.private else "portrait.md")
-    print(f.read_text(encoding="utf-8") if f.is_file() else "(empty)")
+    text = f.read_text(encoding="utf-8") if f.is_file() else ""
+    if a.section:
+        text = get_section(text, a.section) or f"(no section {a.section!r})"
+    print(text or "(empty)")
+
+
+def digest_lines(text, sections, n):
+    """Same selection the journal uses: chosen sections in order, non-empty lines, capped."""
+    names = [s.strip().lower() for s in sections if s.strip()]
+    found, cur = {}, None
+    for line in text.splitlines():
+        if line.startswith("## "):
+            head = line[3:].strip().lower()
+            cur = next((s for s in names if head.startswith(s)), None)
+            if cur is not None:
+                found.setdefault(cur, [])
+        elif cur is not None and line.strip():
+            found[cur].append(line)
+    return [l for s in names for l in found.get(s, [])][:n]
+
+
+def est_tokens(s):
+    """Rough Claude token count: ~4 chars/token for ASCII, ~2.5 for other scripts (e.g. Cyrillic)."""
+    ascii_n = sum(1 for ch in s if ord(ch) < 128)
+    return round(ascii_n / 4 + (len(s) - ascii_n) / 2.5)
+
+
+def avg_requests(last=30):
+    """Mean number of model requests per session, measured from the user's own transcripts."""
+    counts = []
+    for p in transcripts()[-last:]:
+        ids = set()
+        try:
+            with open(p, encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    if '"assistant"' not in line:
+                        continue
+                    try:
+                        d = json.loads(line)
+                    except ValueError:
+                        continue
+                    if d.get("type") == "assistant" and not d.get("isSidechain"):
+                        mid = (d.get("message") or {}).get("id") or d.get("uuid")
+                        if mid:  # one API response can span several lines; count it once
+                            ids.add(mid)
+        except OSError:
+            continue
+        if ids:
+            counts.append(len(ids))
+    return (sum(counts) / len(counts), len(counts)) if counts else (30.0, 0)
+
+
+def cmd_digest_cost(_):
+    f = PORTRAIT_DIR / "portrait.md"
+    text = f.read_text(encoding="utf-8") if f.is_file() else ""
+    reqs, n_sessions = avg_requests()
+    src = (f"measured over your last {n_sessions} sessions" if n_sessions
+           else "no transcripts found, assumed")
+    print(f"requests per session: {reqs:.0f} ({src})")
+    print("cost model: written to cache once (x1.25), then read from cache on each later request (x0.1)")
+    print(f"{'preset':<8} {'sections':<52} {'lines':>5} {'tokens':>6} {'per session':>11} {'per 100':>8}")
+    for name, (secs, n) in DIGEST_PRESETS.items():
+        if text:
+            lines = digest_lines(text, secs, n)
+            body = "\n".join(["About the user (from the portrait):"] + lines) if lines else ""
+            tok, note = est_tokens(body), ""
+        else:
+            lines, tok, note = [None] * n, round(n * 20), " (estimate: no portrait yet)"
+        per = tok * CACHE_WRITE + tok * CACHE_READ * max(reqs - 1, 0)
+        mark = " *" if name == DEFAULT_DIGEST else ""
+        print(f"{name + mark:<8} {', '.join(secs) or '-':<52} {len(lines):>5} {tok:>6} "
+              f"{per:>11.0f} {per * 100:>8.0f}{note}")
+    print("tokens = input-token equivalents; * = default. Exact plan-limit accounting is not public.")
+
+
+def cmd_link(a):
+    e = eco_register()
+    link = dict(LINK_DEFAULTS, **(e["links"].get(LINK) or {}))
+    if a.digest:
+        link["digest_sections"], link["digest_lines"] = DIGEST_PRESETS[a.digest]
+        link["digest_preset"] = a.digest
+    link["enabled"] = a.state == "on"
+    link["decided"] = dt.date.today().isoformat()
+    e["links"][LINK] = link
+    atomic_write(ECO_FILE, json.dumps(e, ensure_ascii=False, indent=2) + "\n")
+    print(f"link {LINK}: {a.state}")
 
 
 def cmd_save(a):
+    if a.section:
+        if a.private:
+            sys.exit("refused: --section works on portrait.md only.")
+        body = sys.stdin.read().strip()
+        n = len(body.splitlines())
+        if n > SECTION_MAX:
+            sys.exit(f"refused: section is {n} lines > {SECTION_MAX}. Compress and retry.")
+        f = PORTRAIT_DIR / "portrait.md"
+        new = put_section(f.read_text(encoding="utf-8") if f.is_file() else "", a.section, body)
+        if len(new.splitlines()) > PORTRAIT_MAX:
+            sys.exit(f"refused: portrait would be {len(new.splitlines())} lines > {PORTRAIT_MAX}.")
+        atomic_write(f, new)  # a section save is not a full update: last_update stays
+        print(f"saved section {a.section!r} ({n} lines) -> {f}")
+        return
     text = sys.stdin.read().strip() + "\n"
     limit = PRIVATE_MAX if a.private else PORTRAIT_MAX
     n = len(text.splitlines())
@@ -318,10 +525,17 @@ def main(argv=None):
     p.set_defaults(fn=cmd_collect)
     p = sub.add_parser("show")
     p.add_argument("--private", action="store_true")
+    p.add_argument("--section", help="print only this '## ' section")
     p.set_defaults(fn=cmd_show)
     p = sub.add_parser("save")
     p.add_argument("--private", action="store_true")
+    p.add_argument("--section", help="replace only this '## ' section (does not mark a full update)")
     p.set_defaults(fn=cmd_save)
+    p = sub.add_parser("link", help=f"link with {PEER} (shared ecosystem.json)")
+    p.add_argument("state", choices=("on", "off"))
+    p.add_argument("--digest", choices=tuple(DIGEST_PRESETS), help="digest size shown by the journal at session start")
+    p.set_defaults(fn=cmd_link)
+    sub.add_parser("digest-cost", help="token cost of each digest size, with caching").set_defaults(fn=cmd_digest_cost)
     a = ap.parse_args(argv)
     a.fn(a)
 

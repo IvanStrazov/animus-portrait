@@ -9,7 +9,7 @@
       "name": "claude-portrait",
       "source": "./",
       "description": "A compact, incrementally updated portrait of you from your own Claude Code sessions.",
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }

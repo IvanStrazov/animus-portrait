@@ -109,8 +109,65 @@ class PortraitTest(unittest.TestCase):
         (j / "INDEX.md").write_text("2026-11-16 | #x | journal line", encoding="utf-8")
         out = self.run_p("collect").stdout
         self.assertIn("tannic", out)
-        self.assertIn("journal line", out)
+        self.assertNotIn("journal line", out)  # journal is read only when linked
         self.assertNotIn("index only", out)
+        self.run_p("link", "on")
+        self.assertIn("journal line", self.run_p("collect", "--all").stdout)
+
+    def test_link_offer_and_registry(self):
+        self.assertNotIn("link with", self.run_p("status").stdout)  # no journal installed
+        (self.claude / "plugins" / "cache" / "claude-journal").mkdir(parents=True)
+        self.assertIn("NOT DECIDED", self.run_p("status").stdout)
+        self.run_p("link", "off")
+        self.assertIn("link with claude-journal: off", self.run_p("status").stdout)
+        self.run_p("link", "on")
+        eco = json.loads((self.claude / "ecosystem.json").read_text(encoding="utf-8"))
+        link = eco["links"]["claude-journal+claude-portrait"]
+        self.assertTrue(link["enabled"])
+        self.assertIn("Projects", link["auto_sections"])
+        self.assertIn("portrait.py", eco["plugins"]["claude-portrait"]["cmd"])
+        self.assertTrue(eco["plugins"]["claude-portrait"]["portrait_file"].endswith("portrait.md"))
+
+    def test_digest_presets_and_cost(self):
+        self.run_p("link", "on")
+        eco = json.loads((self.claude / "ecosystem.json").read_text(encoding="utf-8"))
+        link = eco["links"]["claude-journal+claude-portrait"]
+        self.assertEqual(link["digest_lines"], 15)  # default preset: medium
+        self.run_p("link", "on", "--digest", "short")
+        eco = json.loads((self.claude / "ecosystem.json").read_text(encoding="utf-8"))
+        self.assertEqual(eco["links"]["claude-journal+claude-portrait"]["digest_sections"],
+                         ["Communication & preferences"])
+        self.write_session("s1", [("2026-11-01T10:00:00Z", "hi")])
+        with open(self.proj / "s1.jsonl", "a", encoding="utf-8") as f:
+            for i in range(10):
+                f.write(json.dumps({"type": "assistant", "message": {"id": f"m{i}", "content": "x"}}) + "\n")
+        out = self.run_p("digest-cost").stdout
+        self.assertIn("requests per session: 10", out)
+        self.assertIn("no portrait yet", out)
+        self.run_p("save", stdin="# P\n## Communication & preferences\n- Russian, direct\n## Who\n- dev\n")
+        out = self.run_p("digest-cost").stdout
+        self.assertNotIn("no portrait yet", out)
+        row = next(l for l in out.splitlines() if l.startswith("short"))
+        tokens, per_session = int(row.split()[-3]), int(row.split()[-2])
+        self.assertGreater(tokens, 0)
+        self.assertEqual(per_session, round(tokens * 1.25 + tokens * 0.1 * 9))
+
+    def test_section_save_and_show(self):
+        self.run_p("save", stdin="# Portrait\n## Who\n- dev\n## Projects\n- bot\n## Unknown\n- age\n")
+        last = json.loads((self.tmp / "portrait" / "config.json").read_text(encoding="utf-8"))["last_update"]
+        self.run_p("save", "--section", "Projects", stdin="- bot (active)\n- journal plugin")
+        text = self.run_p("show").stdout
+        self.assertIn("journal plugin", text)
+        self.assertIn("- dev", text)
+        self.assertIn("- age", text)
+        self.assertEqual(text.count("## Projects"), 1)
+        self.assertNotIn("## Who", self.run_p("show", "--section", "Projects").stdout)
+        self.run_p("save", "--section", "Communication & preferences", stdin="- Russian, direct")
+        self.assertIn("Russian", self.run_p("show", "--section", "communication").stdout)
+        cfg = json.loads((self.tmp / "portrait" / "config.json").read_text(encoding="utf-8"))
+        self.assertEqual(cfg["last_update"], last)  # section saves are not full updates
+        r = self.run_p("save", "--section", "Projects", stdin="\n".join(["x"] * 50), ok=False)
+        self.assertNotEqual(r.returncode, 0)
 
 
 if __name__ == "__main__":
