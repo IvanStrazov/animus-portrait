@@ -1,0 +1,15 @@
+{
+  "name": "claude-portrait",
+  "owner": {
+    "name": "Ivan Strazov",
+    "url": "https://github.com/IvanStrazov"
+  },
+  "plugins": [
+    {
+      "name": "claude-portrait",
+      "source": "./",
+      "description": "A compact, incrementally updated portrait of you from your own Claude Code sessions.",
+      "version": "0.1.0"
+    }
+  ]
+}
