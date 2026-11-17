@@ -1,6 +1,6 @@
 ---
 name: portrait
-description: Build and incrementally update a compact portrait of the user (who they are, projects, how they work with AI, interests, preferences) from their own Claude Code sessions, memory and journal. Use on /portrait, "what do you know about me", "update my portrait", or when asked to describe the user from past sessions.
+description: Build and incrementally update a compact portrait of the user (who they are, projects, how they work with AI, interests, preferences) from their own Claude Code sessions, memory and journal. Use on /portrait, "what do you know about me", "update my portrait", when asked to describe the user from past sessions, or in Russian — «что ты обо мне знаешь», «обнови портрет», «опиши меня», «какой я пользователь».
 ---
 
 # Portrait

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.2 — 2026-11-17
+- Skill: Russian trigger phrases.
+
 ## 0.4.1 — 2026-11-17
 - Skill: `config` with no flags shows the settings; describe locations in plain words, full paths only if asked.
 
