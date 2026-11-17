@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.1 — 2026-11-17
+- Skill: `config` with no flags shows the settings; describe locations in plain words, full paths only if asked.
+
 ## 0.4.0 — 2026-11-17
 - New `forget --yes`: deletes portrait.md and private.md and keeps the privacy settings (`--settings` also deletes config.json). The skill confirms first and never uses rm.
 - With policy `exclude`, `collect` masks messages on sensitive topics, so they never reach the model.

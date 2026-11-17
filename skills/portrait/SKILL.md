@@ -10,7 +10,7 @@ All reads and writes go through one script: `P` = `python3 "<plugin root>/script
 Files live in `~/.claude/portrait/` (local files, never published; when linked, the digest is read into each new session, i.e. sent to the model like any prompt — say so if asked about privacy): `portrait.md` (≤ 80 lines), `private.md` (≤ 40 lines, sensitive topics, only with policy `separate`), `config.json`.
 
 ## 1. Status and first-run setup
-Run `P status`. If any line says NOT SET / NO / NOT DECIDED, ask the user first (one AskUserQuestion covering all of them), and only after the answer save it. Keep it short and lead with a one-line default the user can accept with "ok" (e.g. "sensitive topics: exclude, no extra sources, link: short — ok?"); explain the options only if asked.
+Run `P status` (`P config` with no flags prints the saved settings; describe locations in plain words, e.g. "a folder in your user profile", and give the full path only if asked). If any line says NOT SET / NO / NOT DECIDED, ask the user first (one AskUserQuestion covering all of them), and only after the answer save it. Keep it short and lead with a one-line default the user can accept with "ok" (e.g. "sensitive topics: exclude, no extra sources, link: short — ok?"); explain the options only if asked.
 
 When asked "what do you know about me" and there is no portrait yet, don't say you know nothing: `status` shows how many past sessions there are — say so and offer to build the portrait from them.
 
