@@ -313,7 +313,12 @@ def cmd_status(_):
     print("approved extra sources: " + (", ".join(c["extra_sources"]) or "none"))
     print(f"portrait: {lines} lines" if lines else "portrait: none yet")
     print(f"last update: {c['last_update'] or 'never'}")
-    print(f"sessions with new activity: {len(new)}")
+    if new:
+        days = sorted(dt.datetime.fromtimestamp(p.stat().st_mtime).date() for p in new)
+        span = f"{days[0]}" if days[0] == days[-1] else f"{days[0]} … {days[-1]}"
+        print(f"past sessions to learn from{' since last update' if since else ''}: {len(new)} ({span})")
+    else:
+        print("past sessions to learn from: none" + (" since last update" if since else ""))
     e = eco_register()
     if peer_installed(e):
         link = e["links"].get(LINK)
@@ -338,8 +343,8 @@ def cmd_config(a):
     if a.sources_asked or a.add_source or a.remove_source:
         c["sources_asked"] = True
     save_cfg(c)
-    print(json.dumps({k: c[k] for k in ("sensitive", "extra_sources", "sources_asked")},
-                     ensure_ascii=False))
+    print(f"saved: sensitive topics = {c['sensitive'] or 'not set'}; extra sources = "
+          f"{', '.join(c['extra_sources']) or 'none'}{'' if c['sources_asked'] else ' (not asked yet)'}")
 
 
 def cmd_collect(a):

@@ -1,6 +1,6 @@
 {
   "name": "animus-portrait",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "A compact portrait of you (projects, work style, interests, preferences) built from your own Claude Code sessions and updated incrementally: only new sessions are read on each update. Sensitive topics are opt-in. One stdlib Python file, plain Markdown, local only.",
   "author": {
     "name": "Ivan Strazov",

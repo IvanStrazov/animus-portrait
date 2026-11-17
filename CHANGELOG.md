@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2 — 2026-11-17
+- Skill: first-run setup leads with a one-line default the user can accept with "ok".
+- Skill: with no portrait yet, "what do you know about me" names the past sessions available instead of "nothing".
+- `status` shows how many past sessions there are and their dates; `config` prints a readable line instead of JSON.
+
 ## 0.3.1 — 2026-11-17
 - Skill: with `exclude`, sensitive facts are never named back to the user either; with `separate`, only on request.
 - Skill: the current working folder is not a source unless approved; name exactly the sources that were read; `show` is the only way to look at the files.
