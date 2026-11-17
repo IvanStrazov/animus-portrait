@@ -44,6 +44,23 @@ class PortraitTest(unittest.TestCase):
             "content": [{"type": "tool_result", "content": "ignored tool output"}]}}))
         (self.proj / f"{name}.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
+    def test_exclude_masks_sensitive_and_forget_keeps_settings(self):
+        self.write_session("s1", [
+            ("2026-11-01T10:00:00Z", "У меня давление скачет, пью таблетки"),
+            ("2026-11-01T10:01:00Z", "Сделай план урока по циклам"),
+        ])
+        self.run_p("config", "--sensitive", "exclude", "--sources-asked")
+        out = self.run_p("collect").stdout
+        self.assertNotIn("давление", out)
+        self.assertIn("skipped by the sensitive-topic policy", out)
+        self.assertIn("план урока", out)
+        self.run_p("save", stdin="# Portrait\n## Who\n- teacher\n")
+        self.assertIn("refused", self.run_p("forget", ok=False).stderr)   # needs --yes
+        self.assertIn("settings kept", self.run_p("forget", "--yes").stdout)
+        st = self.run_p("status").stdout
+        self.assertIn("portrait: none yet", st)
+        self.assertIn("sensitive policy: exclude", st)
+
     def test_status_asks_on_first_run(self):
         out = self.run_p("status").stdout
         self.assertIn("NOT SET", out)

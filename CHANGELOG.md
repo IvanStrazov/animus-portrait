@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0 — 2026-11-17
+- New `forget --yes`: deletes portrait.md and private.md and keeps the privacy settings (`--settings` also deletes config.json). The skill confirms first and never uses rm.
+- With policy `exclude`, `collect` masks messages on sensitive topics, so they never reach the model.
+- Skill: section names stay in English (translate only when talking); when linked, the digest is sent to the model each session; cost explained plainly to non-technical users.
+
 ## 0.3.3 — 2026-11-17
 - `save --section` drops a repeated header and refuses a body that contains other `## ` sections.
 - Skill: ask first, save after; sensitive topics are never written to the linked sections (the journal does not filter them); Windows: take the interpreter from ecosystem.json when `python`/`python3` are Store stubs.

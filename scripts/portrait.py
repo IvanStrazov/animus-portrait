@@ -347,6 +347,23 @@ def cmd_config(a):
           f"{', '.join(c['extra_sources']) or 'none'}{'' if c['sources_asked'] else ' (not asked yet)'}")
 
 
+# Word stems that mark a message as a sensitive topic. With policy `exclude` such messages are masked in
+# `collect`, so the model never sees (and cannot repeat) them. A rough net, not a classifier: the skill rule
+# still applies to whatever slips through.
+SENSITIVE_RE = re.compile(
+    r"(?i)\b(давлен|таблет|лекарств|диагноз|болезн|болит|врач|больниц|терапевт|психолог|психиатр|тревожн|"
+    r"депресс|паник|антидепресс|алкогол|наркот|нарколог|завязк|запой|секс|беремен|развод|бывш\w* муж|бывш\w* жен|"
+    r"религи|церк|молитв|партия|политик|долги\b|кредит|ипотек|зарплат|судебн|адвокат|полици|"
+    r"health|medication|diagnos|therap|anxiety|depress|alcohol|drug|rehab|sex|pregnan|divorce|"
+    r"religio|church|politic|debt|loan|mortgage|salary|lawsuit|lawyer|police)")
+
+
+def mask_sensitive(text, policy):
+    if policy == "exclude" and SENSITIVE_RE.search(text):
+        return "(personal message skipped by the sensitive-topic policy)"
+    return text
+
+
 def cmd_collect(a):
     c = load_cfg()
     since = None if a.all else parse_iso(c["last_update"])
@@ -389,7 +406,7 @@ def cmd_collect(a):
         title = f"## session {ts.date() if ts else '?'} | {Path(cwd).name or cwd or '?'}"
         picked = msgs if len(msgs) <= PER_SESSION else (
             msgs[: PER_SESSION - 2] + msgs[-2:])  # opening asks + how it ended
-        body = "\n".join(f"- {m[2]}" for m in picked)
+        body = "\n".join(f"- {mask_sensitive(m[2], c['sensitive'])}" for m in picked)
         if len(msgs) > len(picked):
             body += f"\n- (+{len(msgs) - len(picked)} more messages)"
         parts.append(f"{title}\n{body}")
@@ -404,6 +421,27 @@ def cmd_collect(a):
     if dropped:
         out.append(f"# {dropped} block(s) dropped by the {budget}-char budget; rerun with --max-chars")
     print("\n\n".join(out))
+
+
+def cmd_forget(a):
+    """Delete the portrait (and private part). Settings stay unless --settings: the user asked to forget
+    facts, not to reset their privacy choices."""
+    if not a.yes:
+        sys.exit("refused: deleting the portrait cannot be undone. Confirm with the user, then rerun with --yes.")
+    gone = []
+    for name in ("portrait.md", "private.md") + (("config.json",) if a.settings else ()):
+        p = PORTRAIT_DIR / name
+        if p.is_file():
+            p.unlink()
+            gone.append(name)
+    if not a.settings:
+        c = load_cfg()
+        c["last_update"] = None
+        save_cfg(c)
+    print(f"[portrait] deleted: {', '.join(gone) or 'nothing (no portrait files)'}"
+          + ("" if a.settings else "; settings kept (sensitive policy, sources)"))
+    if link_enabled(eco_register()):
+        print(f"[portrait] still linked with {PEER}: `link off` to stop the journal digest and section updates")
 
 
 def cmd_show(a):
@@ -560,6 +598,10 @@ def main(argv=None):
     p.add_argument("state", choices=("on", "off"))
     p.add_argument("--digest", choices=tuple(DIGEST_PRESETS), help="digest size shown by the journal at session start")
     p.set_defaults(fn=cmd_link)
+    p = sub.add_parser("forget", help="delete the portrait (asks for --yes); settings stay unless --settings")
+    p.add_argument("--yes", action="store_true")
+    p.add_argument("--settings", action="store_true", help="also delete config.json")
+    p.set_defaults(fn=cmd_forget)
     sub.add_parser("digest-cost", help="token cost of each digest size, with caching").set_defaults(fn=cmd_digest_cost)
     a = ap.parse_args(argv)
     a.fn(a)
