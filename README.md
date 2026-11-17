@@ -10,7 +10,18 @@
 
 **Ask Claude Code "what do you know about me?" and get a real answer, built from your own sessions and kept up to date cheaply.**
 
-> **Part of Animus** — small, local, token-frugal plugins that let Claude Code remember you and your work: [animus-journal](https://github.com/IvanStrazov/animus-journal) (what was done) and [animus-portrait](https://github.com/IvanStrazov/animus-portrait) (who you are). Each works alone; linked, they share context through `~/.claude/ecosystem.json`. The name nods to the memory machine from Assassin's Creed and to the Latin *animus*, "mind". Not affiliated with Ubisoft.
+> **Part of Animus** — small, local, token-frugal plugins that let Claude Code remember you and your work. Each works alone; together they share context through `~/.claude/ecosystem.json`.
+>
+> | Plugin | What it does |
+> |---|---|
+> | [animus-journal](https://github.com/IvanStrazov/animus-journal) | Project journal on a hard token budget: what was done, decided, next |
+> | [animus-portrait](https://github.com/IvanStrazov/animus-portrait) | A compact portrait of you, built from your own sessions |
+> | [animus-brief](https://github.com/IvanStrazov/animus-brief) | One status brief across all your projects |
+> | [animus-limits](https://github.com/IvanStrazov/animus-limits) | Token spend per task, per-task limits, cost estimates |
+> | [animus-relay](https://github.com/IvanStrazov/animus-relay) | Hand work over to a fresh session without losing the thread |
+> | [animus-review](https://github.com/IvanStrazov/animus-review) | Send work to another model for review, triage the answer |
+>
+> The name nods to the memory machine from Assassin's Creed and to the Latin *animus*, "mind". Not affiliated with Ubisoft.
 
 - **Built from your own words.** It reads your messages from Claude Code transcripts, Claude Code memory files, and [animus-journal](https://github.com/IvanStrazov/animus-journal) indexes when you have them. Assistant replies and tool output are skipped.
 - **Incremental.** Each update reads only sessions newer than the last saved portrait, then merges them in. Facts are added, updated or dropped.
