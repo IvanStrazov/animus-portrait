@@ -1,15 +1,15 @@
 {
-  "name": "claude-portrait",
+  "name": "animus-portrait",
   "owner": {
     "name": "Ivan Strazov",
     "url": "https://github.com/IvanStrazov"
   },
   "plugins": [
     {
-      "name": "claude-portrait",
+      "name": "animus-portrait",
       "source": "./",
       "description": "A compact, incrementally updated portrait of you from your own Claude Code sessions.",
-      "version": "0.2.0"
+      "version": "0.3.0"
     }
   ]
 }

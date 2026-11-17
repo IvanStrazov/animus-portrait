@@ -18,7 +18,7 @@ Run `P status`. If any line says NOT SET / NO / NOT DECIDED, ask the user first 
 - **Extra sources** beyond transcripts, memory and journal (e.g. project folders on disk, Documents/installed apps, GitHub profile via `gh`, anything the user names). Default is none.
   → `P config --add-source "<name>"` for each approved one, or `P config --sources-asked` if none.
 
-- **Link with claude-journal** (shown only when it is installed): the portrait then also reads journal indexes; the journal shows a short digest of the portrait at session start and, at wrap-up, updates only "Projects" and "Communication & preferences" from that session. Never sensitive topics.
+- **Link with animus-journal** (shown only when it is installed): the portrait then also reads journal indexes; the journal shows a short digest of the portrait at session start and, at wrap-up, updates only "Projects" and "Communication & preferences" from that session. Never sensitive topics.
   Before asking, run `P digest-cost` and offer its presets as the options, each with its measured "per session" cost (off / short / medium = default / long). Say these are estimates in input-token equivalents with prompt caching.
   → `P link on --digest <preset>` or `P link off`
 

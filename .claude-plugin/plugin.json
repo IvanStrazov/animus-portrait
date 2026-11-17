@@ -1,13 +1,13 @@
 {
-  "name": "claude-portrait",
-  "version": "0.2.0",
+  "name": "animus-portrait",
+  "version": "0.3.0",
   "description": "A compact portrait of you (projects, work style, interests, preferences) built from your own Claude Code sessions and updated incrementally: only new sessions are read on each update. Sensitive topics are opt-in. One stdlib Python file, plain Markdown, local only.",
   "author": {
     "name": "Ivan Strazov",
     "url": "https://github.com/IvanStrazov"
   },
-  "homepage": "https://github.com/IvanStrazov/claude-portrait",
-  "repository": "https://github.com/IvanStrazov/claude-portrait",
+  "homepage": "https://github.com/IvanStrazov/animus-portrait",
+  "repository": "https://github.com/IvanStrazov/animus-portrait",
   "license": "MIT",
   "keywords": ["portrait", "profile", "user", "memory", "personalization", "privacy"]
 }

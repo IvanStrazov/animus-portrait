@@ -116,26 +116,26 @@ class PortraitTest(unittest.TestCase):
 
     def test_link_offer_and_registry(self):
         self.assertNotIn("link with", self.run_p("status").stdout)  # no journal installed
-        (self.claude / "plugins" / "cache" / "claude-journal").mkdir(parents=True)
+        (self.claude / "plugins" / "cache" / "animus-journal").mkdir(parents=True)
         self.assertIn("NOT DECIDED", self.run_p("status").stdout)
         self.run_p("link", "off")
-        self.assertIn("link with claude-journal: off", self.run_p("status").stdout)
+        self.assertIn("link with animus-journal: off", self.run_p("status").stdout)
         self.run_p("link", "on")
         eco = json.loads((self.claude / "ecosystem.json").read_text(encoding="utf-8"))
-        link = eco["links"]["claude-journal+claude-portrait"]
+        link = eco["links"]["animus-journal+animus-portrait"]
         self.assertTrue(link["enabled"])
         self.assertIn("Projects", link["auto_sections"])
-        self.assertIn("portrait.py", eco["plugins"]["claude-portrait"]["cmd"])
-        self.assertTrue(eco["plugins"]["claude-portrait"]["portrait_file"].endswith("portrait.md"))
+        self.assertIn("portrait.py", eco["plugins"]["animus-portrait"]["cmd"])
+        self.assertTrue(eco["plugins"]["animus-portrait"]["portrait_file"].endswith("portrait.md"))
 
     def test_digest_presets_and_cost(self):
         self.run_p("link", "on")
         eco = json.loads((self.claude / "ecosystem.json").read_text(encoding="utf-8"))
-        link = eco["links"]["claude-journal+claude-portrait"]
+        link = eco["links"]["animus-journal+animus-portrait"]
         self.assertEqual(link["digest_lines"], 15)  # default preset: medium
         self.run_p("link", "on", "--digest", "short")
         eco = json.loads((self.claude / "ecosystem.json").read_text(encoding="utf-8"))
-        self.assertEqual(eco["links"]["claude-journal+claude-portrait"]["digest_sections"],
+        self.assertEqual(eco["links"]["animus-journal+animus-portrait"]["digest_sections"],
                          ["Communication & preferences"])
         self.write_session("s1", [("2026-11-01T10:00:00Z", "hi")])
         with open(self.proj / "s1.jsonl", "a", encoding="utf-8") as f:
@@ -169,6 +169,18 @@ class PortraitTest(unittest.TestCase):
         r = self.run_p("save", "--section", "Projects", stdin="\n".join(["x"] * 50), ok=False)
         self.assertNotEqual(r.returncode, 0)
 
+
+    def test_legacy_ecosystem_names_are_migrated(self):
+        self.claude.mkdir(parents=True, exist_ok=True)
+        legacy = {"plugins": {"claude-journal": {"cmd": "py journal.py"}},
+                  "links": {"claude-journal+claude-portrait": {"enabled": True, "digest_lines": 25}}}
+        (self.claude / "ecosystem.json").write_text(json.dumps(legacy), encoding="utf-8")
+        self.assertIn("link with animus-journal: on", self.run_p("status").stdout)
+        eco = json.loads((self.claude / "ecosystem.json").read_text(encoding="utf-8"))
+        self.assertNotIn("claude-journal+claude-portrait", eco["links"])
+        self.assertEqual(eco["links"]["animus-journal+animus-portrait"]["digest_lines"], 25)
+        self.assertIn("animus-journal", eco["plugins"])
+        self.assertNotIn("claude-journal", eco["plugins"])
 
 if __name__ == "__main__":
     unittest.main()

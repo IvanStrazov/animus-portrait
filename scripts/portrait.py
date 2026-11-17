@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""claude-portrait: a compact, incrementally updated portrait of the user for Claude Code.
+"""animus-portrait: a compact, incrementally updated portrait of the user for Claude Code.
 
 Layout (in ~/.claude/portrait/, override with PORTRAIT_DIR):
   portrait.md     the portrait, overwritten on each update, <= PORTRAIT_MAX lines
@@ -12,13 +12,13 @@ Commands:
   collect [--all] [--max-chars N]     new material since the last update -> stdout
   show [--private] [--section S]      print the portrait (or the private part, or one section)
   save [--private] [--section S]      stdin -> portrait.md (or private.md, or one section)
-  link on|off [--digest PRESET]       link with claude-journal via ~/.claude/ecosystem.json
+  link on|off [--digest PRESET]       link with animus-journal via ~/.claude/ecosystem.json
   digest-cost                         token cost of each digest size (off/short/medium/long), with caching
   where                               print the portrait dir
 
 Sources read by `collect`: the user's own messages from Claude Code transcripts
 (~/.claude/projects/*/*.jsonl), Claude Code memory files (memory/*.md), and
-claude-journal indexes (~/journal and <project>/.journal) when linked.
+animus-journal indexes (~/journal and <project>/.journal) when linked.
 Nothing else is read by the script; extra sources are listed in config and
 gathered by Claude only after the user approved them.
 
@@ -57,8 +57,11 @@ SCRIPT = Path(__file__).resolve()
 
 # ---------- ecosystem: links with sibling plugins (shared file, same schema in each plugin) ----------
 ECO_FILE = Path(os.environ.get("CLAUDE_ECOSYSTEM_FILE") or CLAUDE_DIR / "ecosystem.json").expanduser()
-SELF, PEER = "claude-portrait", "claude-journal"
+SELF, PEER = "animus-portrait", "animus-journal"
 LINK = "+".join(sorted((SELF, PEER)))
+# Names before the Animus rename (<= 0.2.0); entries under them are migrated on load.
+LEGACY_NAMES = {"claude-journal": "animus-journal", "claude-portrait": "animus-portrait"}
+LEGACY_LINK = "claude-journal+claude-portrait"
 DIGEST_PRESETS = {  # what the linked journal shows at session start
     "off": ([], 0),
     "short": (["Communication & preferences"], 8),
@@ -137,6 +140,11 @@ def eco_load():
     e.setdefault("version", 1)
     e.setdefault("plugins", {})
     e.setdefault("links", {})
+    for old, new in LEGACY_NAMES.items():
+        if old in e["plugins"]:
+            e["plugins"].setdefault(new, e["plugins"].pop(old))
+    if LEGACY_LINK in e["links"]:
+        e["links"].setdefault(LINK, e["links"].pop(LEGACY_LINK))
     return e
 
 
@@ -154,7 +162,9 @@ def eco_register():
 
 
 def peer_installed(e):
-    return PEER in e["plugins"] or (CLAUDE_DIR / "plugins" / "cache" / PEER).is_dir()
+    cache = CLAUDE_DIR / "plugins" / "cache"
+    old = [k for k, v in LEGACY_NAMES.items() if v == PEER]
+    return PEER in e["plugins"] or any((cache / n).is_dir() for n in [PEER] + old)
 
 
 def link_enabled(e):

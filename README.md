@@ -1,14 +1,18 @@
-# claude-portrait
+# animus-portrait
 
-[![tests](https://github.com/IvanStrazov/claude-portrait/actions/workflows/test.yml/badge.svg)](https://github.com/IvanStrazov/claude-portrait/actions/workflows/test.yml)
-[![version](https://img.shields.io/badge/version-0.2.0-blue)](CHANGELOG.md)
+<a id="animus"></a>
+
+[![tests](https://github.com/IvanStrazov/animus-portrait/actions/workflows/test.yml/badge.svg)](https://github.com/IvanStrazov/animus-portrait/actions/workflows/test.yml)
+[![version](https://img.shields.io/badge/version-0.3.0-blue)](CHANGELOG.md)
 [![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 ![dependencies: none](https://img.shields.io/badge/dependencies-none-brightgreen)
 ![python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
 
 **Ask Claude Code "what do you know about me?" and get a real answer, built from your own sessions and kept up to date cheaply.**
 
-- **Built from your own words.** It reads your messages from Claude Code transcripts, Claude Code memory files, and [claude-journal](https://github.com/IvanStrazov/claude-journal) indexes when you have them. Assistant replies and tool output are skipped.
+> **Part of Animus** — small, local, token-frugal plugins that let Claude Code remember you and your work: [animus-journal](https://github.com/IvanStrazov/animus-journal) (what was done) and [animus-portrait](https://github.com/IvanStrazov/animus-portrait) (who you are). Each works alone; linked, they share context through `~/.claude/ecosystem.json`. The name nods to the memory machine from Assassin's Creed and to the Latin *animus*, "mind". Not affiliated with Ubisoft.
+
+- **Built from your own words.** It reads your messages from Claude Code transcripts, Claude Code memory files, and [animus-journal](https://github.com/IvanStrazov/animus-journal) indexes when you have them. Assistant replies and tool output are skipped.
 - **Incremental.** Each update reads only sessions newer than the last saved portrait, then merges them in. Facts are added, updated or dropped.
 - **Sensitive topics are opt-in.** On first use you choose: `include`, `separate` (kept in `private.md`, shown only when you ask) or `exclude`.
 - **Extra sources only with consent.** Disk folders, GitHub and the like are used only after you approve them. You can revoke them at any time.
@@ -17,8 +21,8 @@
 ## Install
 
 ```
-/plugin marketplace add IvanStrazov/claude-portrait
-/plugin install claude-portrait@claude-portrait
+/plugin marketplace add IvanStrazov/animus-portrait
+/plugin install animus-portrait@animus-portrait
 ```
 
 Then say `/portrait` or "update my portrait".
@@ -42,9 +46,9 @@ Limits can be changed with `PORTRAIT_MAX_LINES`, `PORTRAIT_PRIVATE_MAX_LINES`, `
   config.json    sensitive policy, approved extra sources, last update time
 ```
 
-## Works with claude-journal (optional)
+## Works with animus-journal (optional)
 
-If [claude-journal](https://github.com/IvanStrazov/claude-journal) is installed, the first `/portrait` run offers to link them. They share `~/.claude/ecosystem.json`, and nothing changes until you agree:
+If [animus-journal](https://github.com/IvanStrazov/animus-journal) is installed, the first `/portrait` run offers to link them. They share `~/.claude/ecosystem.json`, and nothing changes until you agree:
 - the portrait also reads journal indexes;
 - the journal adds a short portrait digest at session start and keeps *Projects* and *Communication & preferences* up to date at wrap-up.
 
