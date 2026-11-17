@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1 — 2026-11-17
+- Skill: with `exclude`, sensitive facts are never named back to the user either; with `separate`, only on request.
+- Skill: the current working folder is not a source unless approved; name exactly the sources that were read; `show` is the only way to look at the files.
+- `collect` header spells out what the sensitive policy means.
+
 ## 0.3.0 — 2026-11-17
 - Renamed to **animus-portrait**, part of the Animus ecosystem (was claude-portrait). New repository: `IvanStrazov/animus-portrait` (the old `IvanStrazov/claude-portrait` stays as 0.2.0).
 - To upgrade from 0.2.0: `/plugin marketplace add IvanStrazov/animus-portrait`, then `/plugin install animus-portrait@animus-portrait`, then remove `claude-portrait`. Your portrait in `~/.claude/portrait/` is untouched.

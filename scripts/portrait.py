@@ -360,7 +360,11 @@ def cmd_collect(a):
     head = [f"# collect: since {since.isoformat() if since else 'the beginning'}; "
             f"{len(sessions)} session(s) with new user messages"]
     if c["sensitive"]:
-        head.append(f"# sensitive policy: {c['sensitive']}")
+        head.append(f"# sensitive policy: {c['sensitive']}" + {
+            "exclude": " - skip health, mental state, substances, sex life, religion, politics, finances, legal "
+                       "trouble: write them nowhere and do not repeat them to the user",
+            "separate": " - those topics go to private.md only",
+        }.get(c["sensitive"], ""))
 
     for f in (journal_indexes(cwds) if link_enabled(eco_register()) else []):
         txt = f.read_text(encoding="utf-8", errors="replace").strip()
