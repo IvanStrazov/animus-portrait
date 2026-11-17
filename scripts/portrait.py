@@ -501,6 +501,12 @@ def cmd_save(a):
         if a.private:
             sys.exit("refused: --section works on portrait.md only.")
         body = sys.stdin.read().strip()
+        lines = body.splitlines()
+        if lines and lines[0].strip().lstrip("#").strip().lower() == a.section.lower():
+            body = "\n".join(lines[1:]).strip()  # the header itself is added by the script
+        if any(l.startswith("## ") for l in body.splitlines()):
+            sys.exit("refused: the body of one section must not contain other '## ' sections; "
+                     "save each section separately or the whole portrait with `save`.")
         n = len(body.splitlines())
         if n > SECTION_MAX:
             sys.exit(f"refused: section is {n} lines > {SECTION_MAX}. Compress and retry.")

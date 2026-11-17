@@ -9,7 +9,7 @@
       "name": "animus-portrait",
       "source": "./",
       "description": "A compact, incrementally updated portrait of you from your own Claude Code sessions.",
-      "version": "0.3.2"
+      "version": "0.3.3"
     }
   ]
 }

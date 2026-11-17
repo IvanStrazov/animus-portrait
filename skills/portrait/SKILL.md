@@ -5,12 +5,12 @@ description: Build and incrementally update a compact portrait of the user (who 
 
 # Portrait
 
-All reads and writes go through one script: `P` = `python3 "<plugin root>/scripts/portrait.py"`, where the plugin root is two levels above this skill's base directory (`…/skills/portrait` → `…`). Use `python` if `python3` is missing (Windows). Never Read/Edit the portrait files directly.
+All reads and writes go through one script: `P` = `python3 "<plugin root>/scripts/portrait.py"`, where the plugin root is two levels above this skill's base directory (`…/skills/portrait` → `…`). Use `python` if `python3` is missing. On Windows, `python3`/`python` may be Microsoft Store stubs: then use the interpreter and script path from this plugin's `cmd` in `~/.claude/ecosystem.json` (or a start-of-session line), and write paths with forward slashes so a trailing `\` does not eat the closing quote. Never Read/Edit the portrait files directly.
 
 Files live in `~/.claude/portrait/` (local only, never published): `portrait.md` (≤ 80 lines), `private.md` (≤ 40 lines, sensitive topics, only with policy `separate`), `config.json`.
 
 ## 1. Status and first-run setup
-Run `P status`. If any line says NOT SET / NO / NOT DECIDED, ask the user first (one AskUserQuestion covering all of them), then save the answers. Keep it short and lead with a one-line default the user can accept with "ok" (e.g. "sensitive topics: exclude, no extra sources, link: short — ok?"); explain the options only if asked.
+Run `P status`. If any line says NOT SET / NO / NOT DECIDED, ask the user first (one AskUserQuestion covering all of them), and only after the answer save it. Keep it short and lead with a one-line default the user can accept with "ok" (e.g. "sensitive topics: exclude, no extra sources, link: short — ok?"); explain the options only if asked.
 
 When asked "what do you know about me" and there is no portrait yet, don't say you know nothing: `status` shows how many past sessions there are — say so and offer to build the portrait from them.
 
@@ -20,7 +20,7 @@ When asked "what do you know about me" and there is no portrait yet, don't say y
 - **Extra sources** beyond transcripts, memory and journal (e.g. project folders on disk, Documents/installed apps, GitHub profile via `gh`, anything the user names). Default is none.
   → `P config --add-source "<name>"` for each approved one, or `P config --sources-asked` if none.
 
-- **Link with animus-journal** (shown only when it is installed): the portrait then also reads journal indexes; the journal shows a short digest of the portrait at session start and, at wrap-up, updates only "Projects" and "Communication & preferences" from that session. Never sensitive topics.
+- **Link with animus-journal** (shown only when it is installed): the portrait then also reads journal indexes; the journal shows a short digest of the portrait at session start and, at wrap-up, updates only "Projects" and "Communication & preferences" from that session. Sensitive topics must never be written to those sections (the journal relies on this rule; it does not filter them).
   Before asking, run `P digest-cost` and offer its presets as the options, each with its measured "per session" cost (off / short / medium = default / long). Say these are estimates in input-token equivalents with prompt caching.
   → `P link on --digest <preset>` or `P link off`
 

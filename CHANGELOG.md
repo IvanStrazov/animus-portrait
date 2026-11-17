@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3 — 2026-11-17
+- `save --section` drops a repeated header and refuses a body that contains other `## ` sections.
+- Skill: ask first, save after; sensitive topics are never written to the linked sections (the journal does not filter them); Windows: take the interpreter from ecosystem.json when `python`/`python3` are Store stubs.
+
 ## 0.3.2 — 2026-11-17
 - Skill: first-run setup leads with a one-line default the user can accept with "ok".
 - Skill: with no portrait yet, "what do you know about me" names the past sessions available instead of "nothing".
